@@ -1,19 +1,20 @@
 import { pool } from "../../db"
 import bcrypt from "bcryptjs";
+import type { IUser } from "./user.interface";
 
 
-const creteUserIntoDB = async (payload: any) => {
-    const { name, email, password, age } = payload;
+const creteUserIntoDB = async (payload: IUser) => {
+    const { name, email, password, age, role } = payload;
 
     
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const result = await pool.query(`
-        INSERT INTO users (name, email, password, age)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO users (name, email, password, age, role)
+        VALUES ($1, $2, $3, $4, COALESCE($5, 'user'))
         RETURNING *
-    `, [name, email, hashedPassword, age]);
+    `, [name, email, hashedPassword, age, role]);
 
     delete result.rows[0].password; 
 
@@ -35,14 +36,14 @@ const getUserByIdFromDB = async (id: string) => {
 
 }
 
-const updateUserInDB = async (id: string, payload: any) => {
-    const { name, email, password, age } = payload;
+const updateUserInDB = async (id: string, payload: IUser) => {
+    const { name, email, password, age, role } = payload;
     const result = await pool.query(`
             UPDATE users 
-            SET name = COALESCE($1, name), email = COALESCE($2, email), password = COALESCE($3, password), age = COALESCE($4, age), updated_at = CURRENT_TIMESTAMP
-            WHERE id = $5
+            SET name = COALESCE($1, name), email = COALESCE($2, email), password = COALESCE($3, password), age = COALESCE($4, age), role = COALESCE($5, role), updated_at = CURRENT_TIMESTAMP
+            WHERE id = $6
             RETURNING *
-        `, [name, email, password, age, id])
+        `, [name, email, password, age, role, id])
 
         delete result.rows[0].password;
     return result;
